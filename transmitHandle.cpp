@@ -1,5 +1,7 @@
+#include <iostream>
 
 #include "transmitHandle.h"
+#include "logHandle.h"
 
 transmitHandle::transmitHandle(serialIO* serial, int packetSoftSizeLimit, int packetBufferSize, int recivePacketBufferSize)
 {
@@ -105,17 +107,19 @@ int transmitHandle::getRecivedData(string *returnData)
 
 					if(packetNumber != lastRecivedPacket) // check if a packet was missed
 					{
-						cout << "Packet number (" << lastRecivedPacket << ") was missed!" << endl;
-						lastRecivedPacket--; // reset packet counter
+						hLog << "Packet-number (" << lastRecivedPacket << ") was missed! Recived Packed: " 
+							<< packetNumber << " instead!" << endl;
 
 						//re-request packet
 						string packet;
 						string packetData = "";
-						packetData.append(1,(char)(lastRecivedPacket + 1));
+						packetData.append(1,(char)(lastRecivedPacket));
 						createPacket(&packet, &packetData,0 ,2); // 0 packet number for command
+						serialHandle->writeTo(packet);
 
 						serialBuffer.erase(0, curSerLength + 6);
 						curSerLength = 0;
+						lastRecivedPacket--; // reset packet counter
 
 						return(-4);
 					}
@@ -140,12 +144,14 @@ int transmitHandle::getRecivedData(string *returnData)
 				}
 				else if(packetType == 2) // resend request
 				{
-						if(data.length() < 1) //TODO set proper return value
-							return(res);
+						if(data.length() < 1)
+							return(0);
 
 						int requestNumber = (int)data[0];
-						if(requestNumber > packBufSize) //TODO set proper return value
-							return(res);
+						if(requestNumber > packBufSize)
+							return(0);
+
+						hLog << "Resend request for packet: " << requestNumber << endl;
 
 						string packet;
 						createPacket(&packet , &packetBuffer[requestNumber], requestNumber, 0);
@@ -160,7 +166,7 @@ int transmitHandle::getRecivedData(string *returnData)
 				{
 					serialBuffer.erase(0, curSerLength + 6);
 					curSerLength = 0;
-					cout << endl << "Unknown packet type: " << packetType << endl;
+					hLog << "Unknown packet type: " << packetType << endl;
 					*returnData = data;
 					return(res);
 				}

@@ -4,10 +4,13 @@
 #include <thread>
 #include <mutex>
 #include <stdio.h>
+#include <fstream>
+#include <sstream>
 
 #include "serialio.h"
 #include "xbeeHandle.h"
 #include "transmitHandle.h"
+#include "logHandle.h"
 
 //#define dev (char*)"/dev/pts/17"
 //#define dev (char*)"/dev/pts/18"
@@ -23,6 +26,9 @@
 using namespace std;
 
 atomic<bool> run(true);
+
+// global log class (yes, I know, bad programming right there)
+logHandle hLog;
 
 void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer, bool filterMode = false) //input handle
 {
@@ -79,6 +85,7 @@ int main(int argc, char* argv[])
 	int destinationAddr = 0;
 
 	string devPath = dev;
+	string logPath = "./radio.log";
 
 	for(int i = 1; i < argc; i++)
 	{
@@ -102,6 +109,16 @@ int main(int argc, char* argv[])
 				return(1);
 			}
 			devPath = argv[i+1];
+			i++; //increment i due to argument
+		}
+		else if(strcmp(argv[i], "-l") == 0)
+		{ // set logfile
+			if(!(i+1 < argc))
+			{
+				cout << "Error: -l missing argument!" << endl;
+				return(1);
+			}
+			logPath = argv[i+1];
 			i++; //increment i due to argument
 		}
 		else if(strcmp(argv[i], "--set-destination") == 0)
@@ -167,9 +184,11 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	hLog.setLogFile(logPath);
+
 	if(quietMode == false)
 		cout << versionString << endl;
-
+	hLog << versionString << endl;
 
 	serialIO ser;
 
@@ -254,13 +273,28 @@ int main(int argc, char* argv[])
 			if(res != 0)
 			{
 				if(res >= 0)
+				{
+					//writeTeeLog(retVal, quietMode);
 					cout << retVal << flush;
-				else if(res == -3 && quietMode == false)
-					cout << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
-				else if(res == -4 && quietMode == false)
-					cout << "Missed packet!"<< endl;
+				}
+				else if(res == -3)
+				{
+					if(!quietMode)
+						cout << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
+					hLog << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
+				}
+				else if(res == -4)
+				{
+					if(!quietMode)
+						cout << "Missed packet!"<< endl;
+					hLog << "Missed packet!"<< endl;
+				}
 				else if(quietMode == false)
-					cout << "Failed recive! (" << res << ")" << endl;
+				{
+					if(!quietMode)
+						cout << "Failed recive! (" << res << ")" << endl;
+					hLog << "Failed recive! (" << res << ")" << endl;
+				}
 			}
 		}
 
