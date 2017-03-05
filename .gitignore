@@ -4,6 +4,7 @@
 *.class
 *.dll
 *.exe
+*.out
 *.o
 *.so
 
@@ -35,3 +36,4 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+*~

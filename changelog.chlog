@@ -1,0 +1,16 @@
+
+### Verssion: 0.1:   (2017-03-05)
+* DONE: serial handle
+* DONE: basic reception response
+* WIP:	xBee commands currently available:
+ ++	Diognostic
+  +	getBoardVoltage
+  +	getReceivedSignalStrength
+  +	getDestinationAddress
+  +	getSourceAddress
+  +	setDestinationAddress
+  +	setSourceAddress
+
+ ++	Serial interfacing
+  +	setInterfaceDataRate
+  +	getInterfaceDataRate

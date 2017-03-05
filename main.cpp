@@ -8,20 +8,22 @@
 
 #include "serialio.h"
 #include "xbeeHandle.h"
-#include "packetHandle.h"
+#include "transmitHandle.h"
 
 //#define dev (char*)"/dev/ttyUSB0"
 //#define dev (char*)"/dev/ttyS0"
-//#define dev (char*)"/dev/pts/25"
-#define dev (char*)"/dev/pts/26"
+//#define dev (char*)"/dev/pts/24"
+#define dev (char*)"/dev/pts/25"
 
 #define packetSoftSizeLimit (unsigned int)512
+#define versionString "Communications Handle Ver: 0.1"
+
 
 using namespace std;
 
 atomic<bool> run(true);
 
-void inputHandle(serialIO* ser, mutex* mSerial, string* buffer) //input handle
+void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer) //input handle
 {
 	struct termios initial_settings,new_settings;
 
@@ -54,12 +56,15 @@ void inputHandle(serialIO* ser, mutex* mSerial, string* buffer) //input handle
 
 int main()
 {
+	cout << versionString << endl;
 	serialIO ser;
 
 	if(ser.initialize(dev, B9600, 0, false, 0) != 0)
 		return(0);
 
 	xbeeHandle xbee(&ser);
+	transmitHandle tHandle(&ser, packetSoftSizeLimit, 5);
+
 	/*cout << "Board Voltage: " << xbee.getBoardVoltage() << endl;
 	cout << "Received Signal Strength: "<< xbee.getReceivedSignalStrength() << endl;
 
@@ -77,15 +82,11 @@ int main()
 	cout << "baud rate: " << xbee.getInterfaceDataRate() << endl;*/
 
 
-	cout << "Entered console mode!" << endl << '>';
+	cout << "Entered console mode: " << endl;
 
-	mutex mSerial;
+	mutex mBuffer;
 	string userInput;
-	string serialBuffer;
-	unsigned int curSerLength = 0;
-	thread cinThread(inputHandle, &ser, &mSerial, &userInput);
-
-	packetHandle packHandle(5);
+	thread cinThread(inputHandle, &ser, &mBuffer, &userInput);
 
 	while(run)
 	{
@@ -95,7 +96,7 @@ int main()
 			if(userInput.length() > 0)
 			{
 				string writeString;
-				if(userInput.length() > packetSoftSizeLimit)
+				if(userInput.length() > tHandle.getSoftLimit())
 				{
 					writeString = userInput.substr(0, packetSoftSizeLimit);
 					userInput.erase(0, packetSoftSizeLimit);
@@ -106,59 +107,23 @@ int main()
 					userInput.clear();
 				}
 				cout << writeString << flush;
-				string packet;
-				packHandle.createPacket(&packet , &writeString);
-				ser.writeTo(packet);
+				tHandle.transmitData(writeString);
 
 			}
 			mSerial.unlock();
 		}
 
-
-		// serial handle
-		string tempBuf = ser.readFrom();
-		if(tempBuf.length() > 0 || serialBuffer.length() >= 2)
+		// serial packet handle
+		string retVal;
+		int res = tHandle.getRecivedData(&retVal);
+		if(res != 0)
 		{
-			serialBuffer += tempBuf;
-			if(curSerLength == 0 && serialBuffer.length() >= 2)
-			{
-				curSerLength = static_cast<unsigned char>(serialBuffer[0])*0x100 + 
-					       static_cast<unsigned char>(serialBuffer[1]);
-
-				if(curSerLength > packetSoftSizeLimit) // soft limit
-				{
-					curSerLength = 0;
-					serialBuffer.erase(0, 1); // remove 1 byte and try again
-					//serialBuffer.clear();
-				}
-			}
-			if(serialBuffer.length() >= (curSerLength + 3 + 2) && curSerLength > 0) 
-			{	// +1 for checksum +2 for length
-				// all data recived
-				string packetString = serialBuffer.substr(0, curSerLength + 3 + 2);
-
-				string data;
-				int res = packHandle.openPacket(&data, &packetString);
-			
-				if(res >= 0)
-				{
-					cout << "Unpacked (" << res << "): " << data << endl;
-					serialBuffer.erase(0, curSerLength + 3 + 2);
-					curSerLength = 0;
-				}
-				else if(res == -3)
-				{
-					cout << "Erronious unpack (" << res << "):  " << data << endl;
-					serialBuffer.erase(0, curSerLength + 3 + 2);
-					curSerLength = 0;
-				}
-				else
-				{
-					cout << "Failed unpack! (" << res << ")" << endl;
-					serialBuffer.erase(0, 1); // remove 1 byte and try again
-					curSerLength = 0;
-				}
-			}
+			if(res)
+				cout << retVal;
+			else if(res == -3)
+				cout << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
+			else if(res != -4)
+				cout << "Failed recive! (" << res << ")" << endl;
 		}
 	}
 
