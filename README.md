@@ -3,6 +3,9 @@
 ## Main Purpose
 	To handle data transmissions over the xBee and make sure that data is correct.
 
+## Current Version
+### Ver: 0.11
+
 ## Currently Implemented
 
 * Serial handle

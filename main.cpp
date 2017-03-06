@@ -11,12 +11,12 @@
 #include "transmitHandle.h"
 
 //#define dev (char*)"/dev/ttyUSB0"
-//#define dev (char*)"/dev/ttyS0"
-#define dev (char*)"/dev/pts/24"
+#define dev (char*)"/dev/ttyS0"
+//#define dev (char*)"/dev/pts/24"
 //#define dev (char*)"/dev/pts/2"
 
 #define packetSoftSizeLimit (unsigned int)512
-#define versionString "Communications Handle Ver: 0.1"
+#define versionString "Communications Handle Ver: 0.11"
 
 
 using namespace std;
