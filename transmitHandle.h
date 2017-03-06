@@ -35,6 +35,7 @@ private:
 	unsigned int softSizeLimit;
 	unsigned int curSerLength;
 	unsigned int packBufSize;
+	unsigned int recPackBufSize;
 
 	unsigned int maxDiscrepency;
 

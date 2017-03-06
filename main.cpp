@@ -12,8 +12,8 @@
 
 //#define dev (char*)"/dev/ttyUSB0"
 //#define dev (char*)"/dev/ttyS0"
-//#define dev (char*)"/dev/pts/24"
-#define dev (char*)"/dev/pts/25"
+#define dev (char*)"/dev/pts/24"
+//#define dev (char*)"/dev/pts/2"
 
 #define packetSoftSizeLimit (unsigned int)512
 #define versionString "Communications Handle Ver: 0.1"
@@ -22,6 +22,7 @@
 using namespace std;
 
 atomic<bool> run(true);
+bool quetMode = false;
 
 void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer) //input handle
 {
@@ -43,20 +44,32 @@ void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer) //input handle
 		if(temp == 3)
 			break;
 
+
 		if(temp != -1)
 		{
-			mSerial->lock();
+			mBuffer->lock();
 			buffer->append(1,temp);
-			mSerial->unlock();
+			mBuffer->unlock();
 		}
 	}
 	tcsetattr(0, TCSANOW, &initial_settings);
 	run.store(false);
 }
 
-int main()
+int main(int argc, char* argv[])
 {
-	cout << versionString << endl;
+
+	if(argc > 1)
+	{
+		if(strcmp(argv[1], "-q") == 0)
+		{ // supress all messages
+			quetMode = true;
+		}
+	}
+
+	if(quetMode == false)
+		cout << versionString << endl;
+
 	serialIO ser;
 
 	if(ser.initialize(dev, B9600, 0, false, 0) != 0)
@@ -82,7 +95,8 @@ int main()
 	cout << "baud rate: " << xbee.getInterfaceDataRate() << endl;*/
 
 
-	cout << "Entered console mode: " << endl;
+	if(quetMode == false)
+		cout << "Entered console mode: " << endl;
 
 	mutex mBuffer;
 	string userInput;
@@ -91,7 +105,7 @@ int main()
 	while(run)
 	{
 		// user handle
-		if(mSerial.try_lock())
+		if(mBuffer.try_lock())
 		{
 			if(userInput.length() > 0)
 			{
@@ -106,11 +120,12 @@ int main()
 					writeString = userInput;
 					userInput.clear();
 				}
-				cout << writeString << flush;
+				if(quetMode == false)
+					cout << writeString << flush;
 				tHandle.transmitData(writeString);
 
 			}
-			mSerial.unlock();
+			mBuffer.unlock();
 		}
 
 		// serial packet handle
@@ -119,7 +134,7 @@ int main()
 		if(res != 0)
 		{
 			if(res)
-				cout << retVal;
+				cout << retVal << flush;
 			else if(res == -3)
 				cout << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
 			else if(res != -4)

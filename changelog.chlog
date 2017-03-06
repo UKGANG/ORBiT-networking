@@ -1,5 +1,9 @@
 
-### Verssion: 0.1:   (2017-03-05)
+### Version: 0.11:  (2017-03-06)
+* ADD: quet mode (-q)
+* FIX: typo in variable names
+
+### Version: 0.1:   (2017-03-05)
 * DONE: serial handle
 * DONE: basic reception response
 * WIP:	xBee commands currently available:

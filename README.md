@@ -16,8 +16,6 @@
 ## TODO
 ### Add/Implement
 
-* Command line argument handling
-
 * Issue xBee commands during runtime
 
 * Proper handshaking
@@ -28,6 +26,8 @@
 
 * Packet addresses
 
+* stream opperators
+
 ### Refine
 
 * Data validation (see "Proper handshaking")
@@ -35,6 +35,10 @@
 * Add more xBee commands
 
 * Some functions missing proper return values
+
+* Command line arguments
+
+* quiet mode
 
 ## Credits
 Cem Eden
