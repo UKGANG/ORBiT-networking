@@ -1,6 +1,15 @@
 
+### Version: 0.12:  (2017-03-06)
+*ADD: console mode disable (-c)
+*ADD: set destination address (--set-destination)
+*ADD: get destination address (--get-destination)
+*ADD: set source address (--set-source)
+*ADD: get source address (--get-source)
+*Add: get board voltage (--get-voltage)
+*FIX: typo in variable names
+
 ### Version: 0.11:  (2017-03-06)
-* ADD: quet mode (-q)
+* ADD: quiet mode (-q)
 * FIX: typo in variable names
 
 ### Version: 0.1:   (2017-03-05)

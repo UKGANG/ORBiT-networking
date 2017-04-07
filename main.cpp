@@ -10,19 +10,18 @@
 #include "xbeeHandle.h"
 #include "transmitHandle.h"
 
-//#define dev (char*)"/dev/ttyUSB0"
-#define dev (char*)"/dev/ttyS0"
+#define dev (char*)"/dev/ttyUSB0"
+//#define dev (char*)"/dev/ttyS0"
 //#define dev (char*)"/dev/pts/24"
 //#define dev (char*)"/dev/pts/2"
 
 #define packetSoftSizeLimit (unsigned int)512
-#define versionString "Communications Handle Ver: 0.11"
+#define versionString "Communications Handle Ver: 0.12"
 
 
 using namespace std;
 
 atomic<bool> run(true);
-bool quetMode = false;
 
 void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer) //input handle
 {
@@ -58,16 +57,86 @@ void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer) //input handle
 
 int main(int argc, char* argv[])
 {
+	bool quietMode = false;
+	bool consoleMode = true;
+	bool setDestination = false;
+	bool getDestination = false;
+	bool getVoltage = false;
+	bool setSource = false;
+	bool getSource = false;
+	int sourceAddr = 0;
+	int destinationAddr = 0;
 
-	if(argc > 1)
+	for(int i = 1; i < argc; i++)
 	{
-		if(strcmp(argv[1], "-q") == 0)
+		if(strcmp(argv[i], "-q") == 0)
 		{ // supress all messages
-			quetMode = true;
+			quietMode = true;
+		}
+		else if(strcmp(argv[i], "-c") == 0)
+		{ // turn off console mode
+			consoleMode = false;
+		}
+		else if(strcmp(argv[i], "--set-destination") == 0)
+		{  // set destination
+			if(!(i+1 < argc))
+			{
+				cout << "Error: set-destination missing argument!" << endl;
+				return(1);
+			}
+			try 
+			{
+			    destinationAddr = stoi(argv[i+1]);
+			} 
+			catch (std::exception const &e) 
+			{
+				cout << "Error: set-destination only accepts a number!" << endl;
+				return(1);
+			}
+
+			i++; //increment i due to argument
+			setDestination = true;
+		}
+		else if(strcmp(argv[i], "--get-destination") == 0)
+		{  // get destination
+			getDestination = true;
+		}
+		else if(strcmp(argv[i], "--set-source") == 0)
+		{  // set source
+			if(!(i+1 < argc))
+			{
+				cout << "Error: set-source missing argument!" << endl;
+				return(1);
+			}
+			try 
+			{
+			    sourceAddr = stoi(argv[i+1]);
+			} 
+			catch (std::exception const &e) 
+			{
+				cout << "Error: set-source only accepts a number!" << endl;
+				return(1);
+			}
+
+			i++; //increment i due to argument
+			setSource = true;
+		}
+		else if(strcmp(argv[i], "--get-source") == 0)
+		{  // get source
+			getSource = true;
+		}
+		else if(strcmp(argv[i], "--get-voltage") == 0)
+		{  // get board voltage
+			getVoltage = true;
+		}
+		else
+		{
+			cout << "Unknown argument: " << argv[i] << endl;
+			return(1);
 		}
 	}
 
-	if(quetMode == false)
+	if(quietMode == false)
 		cout << versionString << endl;
 
 	serialIO ser;
@@ -78,16 +147,21 @@ int main(int argc, char* argv[])
 	xbeeHandle xbee(&ser);
 	transmitHandle tHandle(&ser, packetSoftSizeLimit, 5);
 
-	/*cout << "Board Voltage: " << xbee.getBoardVoltage() << endl;
-	cout << "Received Signal Strength: "<< xbee.getReceivedSignalStrength() << endl;
+	if(setDestination)
+		xbee.setDestinationAddress(destinationAddr);
+	if(getDestination)
+		cout << "Destination Address: " << xbee.getDestinationAddress() << endl;
+		
+	if(setSource)
+		xbee.setSourceAddress(sourceAddr);
+	if(getSource)
+		cout << "Source Address: " << xbee.getSourceAddress() << endl;
+		
+	if(getVoltage == true)
+		cout << "Board Voltage: " << xbee.getBoardVoltage() << endl;
 
-	cout << "setting destination address..." << endl;
-	xbee.setDestinationAddress(0xffff);
-	cout << "Destination Address: " << xbee.getDestinationAddress() << endl;
 
-	cout << "setting source address..." << endl;
-	xbee.setSourceAddress(0xffff);
-	cout << "Source Address: " << xbee.getSourceAddress() << endl;
+	/*cout << "Received Signal Strength: "<< xbee.getReceivedSignalStrength() << endl;
 
 	cout << "baud rate: " << xbee.getInterfaceDataRate() << endl;
 	cout << "changing serial baud rate..." << endl;
@@ -95,55 +169,57 @@ int main(int argc, char* argv[])
 	cout << "baud rate: " << xbee.getInterfaceDataRate() << endl;*/
 
 
-	if(quetMode == false)
-		cout << "Entered console mode: " << endl;
-
-	mutex mBuffer;
-	string userInput;
-	thread cinThread(inputHandle, &ser, &mBuffer, &userInput);
-
-	while(run)
+	if(consoleMode == true)
 	{
-		// user handle
-		if(mBuffer.try_lock())
+		if(quietMode == false)
+			cout << "Entered console mode: " << endl;
+
+		mutex mBuffer;
+		string userInput;
+		thread cinThread(inputHandle, &ser, &mBuffer, &userInput);
+
+		while(run)
 		{
-			if(userInput.length() > 0)
+			// user handle
+			if(mBuffer.try_lock())
 			{
-				string writeString;
-				if(userInput.length() > tHandle.getSoftLimit())
+				if(userInput.length() > 0)
 				{
-					writeString = userInput.substr(0, packetSoftSizeLimit);
-					userInput.erase(0, packetSoftSizeLimit);
-				}
-				else
-				{
-					writeString = userInput;
-					userInput.clear();
-				}
-				if(quetMode == false)
-					cout << writeString << flush;
-				tHandle.transmitData(writeString);
+					string writeString;
+					if(userInput.length() > tHandle.getSoftLimit())
+					{
+						writeString = userInput.substr(0, packetSoftSizeLimit);
+						userInput.erase(0, packetSoftSizeLimit);
+					}
+					else
+					{
+						writeString = userInput;
+						userInput.clear();
+					}
+					if(quietMode == false)
+						cout << writeString << flush;
+					tHandle.transmitData(writeString);
 
+				}
+				mBuffer.unlock();
 			}
-			mBuffer.unlock();
+
+			// serial packet handle
+			string retVal;
+			int res = tHandle.getRecivedData(&retVal);
+			if(res != 0)
+			{
+				if(res)
+					cout << retVal << flush;
+				else if(res == -3 && quietMode == false)
+					cout << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
+				else if(res != -4 && quietMode == false)
+					cout << "Failed recive! (" << res << ")" << endl;
+			}
 		}
 
-		// serial packet handle
-		string retVal;
-		int res = tHandle.getRecivedData(&retVal);
-		if(res != 0)
-		{
-			if(res)
-				cout << retVal << flush;
-			else if(res == -3)
-				cout << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
-			else if(res != -4)
-				cout << "Failed recive! (" << res << ")" << endl;
-		}
+		cinThread.join();
 	}
-
-	cinThread.join();
-
 	return(0);
 }
 

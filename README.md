@@ -4,7 +4,7 @@
 	To handle data transmissions over the xBee and make sure that data is correct.
 
 ## Current Version
-### Ver: 0.11
+### Ver: 0.12
 
 ## Currently Implemented
 
@@ -42,6 +42,8 @@
 * Command line arguments
 
 * quiet mode
+
+* input handle (backspace)
 
 ## Credits
 Cem Eden
