@@ -18,6 +18,24 @@ string xbeeHandle::binaryCommand(string cmdStr, int reciveLength)
 	return(returnString);
 }
 
+int xbeeHandle::tryReset()
+{
+	//ATRT1
+	usleep(2000);
+	serialHandle->writeTo("+++");
+	usleep(1500);
+	serialHandle->writeTo("ATRT 1\n");
+
+	string returnString = "";
+	returnString = serialHandle->readFrom(1);
+
+	cout << returnString << endl;
+
+	if(returnString == "OK\r")
+		return(0);
+	return(-1);
+}
+
 float xbeeHandle::getBoardVoltage()
 {
 	string s = binaryCommand("\x3B", 6);
@@ -36,7 +54,7 @@ float xbeeHandle::getBoardVoltage()
 int xbeeHandle::getReceivedSignalStrength()
 {
 	string s = binaryCommand("\xb6", 2);
-	
+
 	if(s.length() == 2)
 	{
 		return(-2);
@@ -110,16 +128,16 @@ int xbeeHandle::setInterfaceDataRate(int rate)
 		rateParameter = 2;
 		break;
 	case(B9600):
-		rateParameter = 3;	
+		rateParameter = 3;
 		break;
 	case(B19200):
-		rateParameter = 4;	
+		rateParameter = 4;
 		break;
 	case(B38400):
-		rateParameter = 5;	
+		rateParameter = 5;
 		break;
 	case(B57600):
-		rateParameter = 6;	
+		rateParameter = 6;
 		break;
 	default:
 		return(-1); // baud rate dosn't exist for the xbee
@@ -130,7 +148,7 @@ int xbeeHandle::setInterfaceDataRate(int rate)
 	s.append(1, 0x00);
 	s.append(1, 0x09); // commit change
 	s.append(2, 0x00);
-	
+
 	binaryCommand(s, 0); // sedn command & commit
 
 	serialIO::serialConfig serConf; //get current settings

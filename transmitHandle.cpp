@@ -9,7 +9,7 @@ transmitHandle::transmitHandle(serialIO* serial, int packetSoftSizeLimit, int pa
 
 	packBufSize = packetBufferSize;
 	recPackBufSize = packetBufferSize; // incase future request
-	
+
 	packetBuffer = new string[packetBufferSize]; // allocate buffer TODO add error checking
 	recivedPacketBuffer = new string[packetBufferSize]; // TODO see previous
 
@@ -75,7 +75,7 @@ int transmitHandle::getRecivedData(string *returnData)
 			int packetNumber;
 			int packetType;
 			int res = openPacket(&data, &packetString, &packetNumber, &packetType);
-		
+
 			if(res >= 0) // unpack success
 			{
 				if(packetType == 0) // data
@@ -113,7 +113,7 @@ int transmitHandle::getRecivedData(string *returnData)
 					*returnData = data;
 					return(res);
 				}
-				
+
 
 				/*if(recPackBufSize > 0 && recivedPacketBuffer != nullptr)
 				{
@@ -127,7 +127,7 @@ int transmitHandle::getRecivedData(string *returnData)
 			{
 				if(packetType == 0)
 				{
-					string transmitString; 
+					string transmitString;
 					transmitString.append(1,packetNumber);// acknowledge recived package
 					transmitString.append(1,21);
 					string packet;

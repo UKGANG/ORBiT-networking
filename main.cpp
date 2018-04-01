@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <string>
 #include <atomic>
@@ -10,10 +9,12 @@
 #include "xbeeHandle.h"
 #include "transmitHandle.h"
 
-#define dev (char*)"/dev/ttyUSB0"
+//#define dev (char*)"/dev/ttyUSB0"
 //#define dev (char*)"/dev/ttyS0"
 //#define dev (char*)"/dev/pts/24"
 //#define dev (char*)"/dev/pts/2"
+#define dev (char*)"/dev/ttyS4"
+
 
 #define packetSoftSizeLimit (unsigned int)512
 #define versionString "Communications Handle Ver: 0.12"
@@ -23,31 +24,35 @@ using namespace std;
 
 atomic<bool> run(true);
 
-void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer) //input handle
+void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer, bool filterMode = false) //input handle
 {
 	struct termios initial_settings,new_settings;
 
 	tcgetattr(0,&initial_settings);
-	
+
 	new_settings = initial_settings;
 	new_settings.c_lflag &= ~ICANON;
 	new_settings.c_lflag &= ~ECHO;
 	new_settings.c_lflag &= ~ISIG;
 	new_settings.c_cc[VMIN] = 0;
 	new_settings.c_cc[VTIME] = 0;
-	
+
 	tcsetattr(0, TCSANOW, &new_settings);
 	while(run)
-	{ 
-		char temp = getchar();
-		if(temp == 3)
-			break;
+	{
+		int temp = getchar();
 
+		if(filterMode == true) // filter characters to process locally only
+		{
+			if(temp == 3)
+				break;
+		}
+		//cout << (int)temp;
 
-		if(temp != -1)
+		if(temp != EOF) // check if character was sent at all (not EOF)
 		{
 			mBuffer->lock();
-			buffer->append(1,temp);
+			buffer->append(1,(char)temp);
 			mBuffer->unlock();
 		}
 	}
@@ -59,11 +64,13 @@ int main(int argc, char* argv[])
 {
 	bool quietMode = false;
 	bool consoleMode = true;
+	bool filterMode = true;
 	bool setDestination = false;
 	bool getDestination = false;
 	bool getVoltage = false;
 	bool setSource = false;
 	bool getSource = false;
+	bool tryReset = false;
 	int sourceAddr = 0;
 	int destinationAddr = 0;
 
@@ -77,6 +84,10 @@ int main(int argc, char* argv[])
 		{ // turn off console mode
 			consoleMode = false;
 		}
+		else if(strcmp(argv[i], "-f") == 0)
+		{ // turn off filter mode
+			filterMode = false;
+		}
 		else if(strcmp(argv[i], "--set-destination") == 0)
 		{  // set destination
 			if(!(i+1 < argc))
@@ -84,11 +95,11 @@ int main(int argc, char* argv[])
 				cout << "Error: set-destination missing argument!" << endl;
 				return(1);
 			}
-			try 
+			try
 			{
 			    destinationAddr = stoi(argv[i+1]);
-			} 
-			catch (std::exception const &e) 
+			}
+			catch (std::exception const &e)
 			{
 				cout << "Error: set-destination only accepts a number!" << endl;
 				return(1);
@@ -108,11 +119,11 @@ int main(int argc, char* argv[])
 				cout << "Error: set-source missing argument!" << endl;
 				return(1);
 			}
-			try 
+			try
 			{
 			    sourceAddr = stoi(argv[i+1]);
-			} 
-			catch (std::exception const &e) 
+			}
+			catch (std::exception const &e)
 			{
 				cout << "Error: set-source only accepts a number!" << endl;
 				return(1);
@@ -128,6 +139,10 @@ int main(int argc, char* argv[])
 		else if(strcmp(argv[i], "--get-voltage") == 0)
 		{  // get board voltage
 			getVoltage = true;
+		}
+		else if(strcmp(argv[i], "--try-reset") == 0)
+		{ // try resetting board with text commands
+			tryReset = true;
 		}
 		else
 		{
@@ -147,16 +162,23 @@ int main(int argc, char* argv[])
 	xbeeHandle xbee(&ser);
 	transmitHandle tHandle(&ser, packetSoftSizeLimit, 5);
 
+	if(tryReset)
+	{
+		cout << "Trying to reset..." << endl;
+		int res = xbee.tryReset();
+		cout << "Reset result: " << res << endl;
+	}
+
 	if(setDestination)
 		xbee.setDestinationAddress(destinationAddr);
 	if(getDestination)
 		cout << "Destination Address: " << xbee.getDestinationAddress() << endl;
-		
+
 	if(setSource)
 		xbee.setSourceAddress(sourceAddr);
 	if(getSource)
 		cout << "Source Address: " << xbee.getSourceAddress() << endl;
-		
+
 	if(getVoltage == true)
 		cout << "Board Voltage: " << xbee.getBoardVoltage() << endl;
 
@@ -176,7 +198,8 @@ int main(int argc, char* argv[])
 
 		mutex mBuffer;
 		string userInput;
-		thread cinThread(inputHandle, &ser, &mBuffer, &userInput);
+		userInput.clear();
+		thread cinThread(inputHandle, &ser, &mBuffer, &userInput, filterMode);
 
 		while(run)
 		{
@@ -197,7 +220,9 @@ int main(int argc, char* argv[])
 						userInput.clear();
 					}
 					if(quietMode == false)
+					{
 						cout << writeString << flush;
+					}
 					tHandle.transmitData(writeString);
 
 				}
@@ -217,6 +242,8 @@ int main(int argc, char* argv[])
 					cout << "Failed recive! (" << res << ")" << endl;
 			}
 		}
+
+		run.store(false);
 
 		cinThread.join();
 	}

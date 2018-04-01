@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <stdlib.h>
 #include <cstdio>
+#include <unistd.h>
+//#include <sys/time.h>
 
 #include <termios.h> // for B-constant definitions
 
@@ -19,6 +21,8 @@ class xbeeHandle
 public:
 
 	xbeeHandle(serialIO* serial);
+
+	int tryReset();
 
 	//diognostic commands
 	float getBoardVoltage();
@@ -37,7 +41,7 @@ private:
 
 	serialIO* serialHandle;
 	string binaryCommand(string cmdStr, int reciveLength);
-	
+
 
 };
 

@@ -10,7 +10,7 @@ serialIO::~serialIO()
 int serialIO::initialize(string device, speed_t speed, int parity, bool blocking, int timeoutMs)
 {
 	fd = open(device.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);
-	if(fd == -1) 
+	if(fd == -1)
 	{
 		cout << "failed to open port" << endl;
 		return(-1);
@@ -65,7 +65,7 @@ int serialIO::setAttributes(speed_t speed, int parity)
         tty.c_cc[VMIN]  = 0;            // read doesn't block
         tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
 
-	
+
         tty.c_iflag &= ~(IXON | IXOFF | IXANY); // shut off xon/xoff ctrl
 
 
@@ -114,7 +114,7 @@ int serialIO::writeTo(string toWrite)
 	{
 		tempString[i] = toWrite[i];
 	}
-	
+
 	return(write(fd, tempString,toWrite.length()));
 }
 
@@ -122,7 +122,7 @@ string serialIO::readFrom()
 {
 	char buf [256];
 	int length = read(fd, buf, sizeof(buf));
-	if(length > 0)	
+	if(length > 0)
 	{
 		string temp = "";
 		temp.append(buf, length);
