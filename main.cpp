@@ -9,10 +9,10 @@
 #include "xbeeHandle.h"
 #include "transmitHandle.h"
 
+//#define dev (char*)"/dev/pts/17"
+//#define dev (char*)"/dev/pts/18"
 //#define dev (char*)"/dev/ttyUSB0"
 //#define dev (char*)"/dev/ttyS0"
-//#define dev (char*)"/dev/pts/24"
-//#define dev (char*)"/dev/pts/2"
 #define dev (char*)"/dev/ttyS4"
 
 
@@ -38,16 +38,19 @@ void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer, bool filterMode 
 	new_settings.c_cc[VTIME] = 0;
 
 	tcsetattr(0, TCSANOW, &new_settings);
+
 	while(run)
 	{
 		int temp = getchar();
 
-		if(filterMode == true) // filter characters to process locally only
+		//if(temp != EOF)
+		//	cout << (int)temp;
+
+		if(filterMode) // filter characters to process locally only
 		{
 			if(temp == 3)
 				break;
 		}
-		//cout << (int)temp;
 
 		if(temp != EOF) // check if character was sent at all (not EOF)
 		{
@@ -71,8 +74,11 @@ int main(int argc, char* argv[])
 	bool setSource = false;
 	bool getSource = false;
 	bool tryReset = false;
+
 	int sourceAddr = 0;
 	int destinationAddr = 0;
+
+	string devPath = dev;
 
 	for(int i = 1; i < argc; i++)
 	{
@@ -87,6 +93,16 @@ int main(int argc, char* argv[])
 		else if(strcmp(argv[i], "-f") == 0)
 		{ // turn off filter mode
 			filterMode = false;
+		}
+		else if(strcmp(argv[i], "-d") == 0)
+		{ // set device
+			if(!(i+1 < argc))
+			{
+				cout << "Error: -d missing argument!" << endl;
+				return(1);
+			}
+			devPath = argv[i+1];
+			i++; //increment i due to argument
 		}
 		else if(strcmp(argv[i], "--set-destination") == 0)
 		{  // set destination
@@ -154,15 +170,18 @@ int main(int argc, char* argv[])
 	if(quietMode == false)
 		cout << versionString << endl;
 
+
 	serialIO ser;
 
-	if(ser.initialize(dev, B9600, 0, false, 0) != 0)
+	if(ser.initialize(devPath, B9600, 0, false, 0) != 0)
 		return(0);
 
 	xbeeHandle xbee(&ser);
 	transmitHandle tHandle(&ser, packetSoftSizeLimit, 5);
 
-	if(tryReset)
+
+
+	if(tryReset) // TODO make this work
 	{
 		cout << "Trying to reset..." << endl;
 		int res = xbee.tryReset();
