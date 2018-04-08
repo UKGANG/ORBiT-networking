@@ -1,20 +1,21 @@
 
 #include "transmitHandle.h"
 
-transmitHandle::transmitHandle(serialIO* serial, int packetSoftSizeLimit, int packetBufferSize)
+transmitHandle::transmitHandle(serialIO* serial, int packetSoftSizeLimit, int packetBufferSize, int recivePacketBufferSize)
 {
 	serialHandle = serial;
 	softSizeLimit = packetSoftSizeLimit;
 	curSerLength = 0;
 
 	packBufSize = packetBufferSize;
-	recPackBufSize = packetBufferSize; // incase future request
+	recPackBufSize = recivePacketBufferSize;
 
 	packetBuffer = new string[packetBufferSize]; // allocate buffer TODO add error checking
 	recivedPacketBuffer = new string[packetBufferSize]; // TODO see previous
 
 	curPacket = 0;
-	curRecivedPacket = 0;
+	//curRecivedPacket = 0;
+	lastRecivedPacket = -1;
 }
 
 transmitHandle::~transmitHandle()
@@ -32,13 +33,13 @@ int transmitHandle::transmitData(string transmitString, int packetType)
 		return(-1);
 
 	string packet;
-	int res = createPacket(&packet , &transmitString, curPacket, packetType);
+	int res = createPacket(&packet , &transmitString, curPacket, packetType); // create packet
 	if(res < 0)
 		return(res);
 
 	if(packBufSize > 0 && packetBuffer != nullptr)
 	{
-		packetBuffer[curPacket] = transmitString;
+		packetBuffer[curPacket] = transmitString; // buffer sent packet
 		curPacket++;
 		if(curPacket >= packBufSize)
 			curPacket = 0;
@@ -55,7 +56,7 @@ int transmitHandle::getRecivedData(string *returnData)
 		serialBuffer += tempBuf;
 		if(curSerLength == 0 && serialBuffer.length() >= 2)
 		{
-			curSerLength = static_cast<unsigned char>(serialBuffer[0])*0x100 + 
+			curSerLength = static_cast<unsigned char>(serialBuffer[0])*0x100 +
 				       static_cast<unsigned char>(serialBuffer[1]);
 
 			if(curSerLength > softSizeLimit) // soft limit
@@ -66,7 +67,7 @@ int transmitHandle::getRecivedData(string *returnData)
 				//serialBuffer.clear();
 			}
 		}
-		if(serialBuffer.length() >= (curSerLength + 6) && curSerLength > 0) 
+		if(serialBuffer.length() >= (curSerLength + 6) && curSerLength > 0)
 		{	// +1 for checksum +2 for length
 			// all data recived
 			string packetString = serialBuffer.substr(0, curSerLength + 6);
@@ -80,13 +81,44 @@ int transmitHandle::getRecivedData(string *returnData)
 			{
 				if(packetType == 0) // data
 				{
-					string transmitString; 
+					/*string transmitString;
 					transmitString.append(1,packetNumber);// acknowledge recived package
 					transmitString.append(1,6);
 					string packet;
 					createPacket(&packet , &transmitString, curPacket, 1);
 					serialHandle->writeTo(packet);
+					*/
+
 					//TODO return value
+					if(lastRecivedPacket == -1) // syncronize program on restart
+					{
+						lastRecivedPacket = packetNumber;
+					}
+					else
+					{
+						lastRecivedPacket++;
+						if(lastRecivedPacket >= recPackBufSize)
+						{
+							lastRecivedPacket = 0;
+						}
+					}
+
+					if(packetNumber != lastRecivedPacket) // check if a packet was missed
+					{
+						cout << "Packet number (" << lastRecivedPacket << ") was missed!" << endl;
+						lastRecivedPacket--; // reset packet counter
+
+						//re-request packet
+						string packet;
+						string packetData = "";
+						packetData.append(1,(char)(lastRecivedPacket + 1));
+						createPacket(&packet, &packetData,0 ,2); // 0 packet number for command
+
+						serialBuffer.erase(0, curSerLength + 6);
+						curSerLength = 0;
+
+						return(-4);
+					}
 
 					serialBuffer.erase(0, curSerLength + 6);
 					curSerLength = 0;
@@ -101,15 +133,34 @@ int transmitHandle::getRecivedData(string *returnData)
 						string packet;
 						createPacket(&packet , &(packetBuffer[data[0]]), data[0], 0);
 						serialHandle->writeTo(packet);
-					}*/ // add order handle
+					} // add order handle */
 					serialBuffer.erase(0, curSerLength + 6);
 					curSerLength = 0;
 					return(0);
+				}
+				else if(packetType == 2) // resend request
+				{
+						if(data.length() < 1) //TODO set proper return value
+							return(res);
+
+						int requestNumber = (int)data[0];
+						if(requestNumber > packBufSize) //TODO set proper return value
+							return(res);
+
+						string packet;
+						createPacket(&packet , &packetBuffer[requestNumber], requestNumber, 0);
+						serialHandle->writeTo(packet);
+						return(0);
+
+						//string packet;
+						//createPacket(&packet, "R", , 0);
+						//createPacket(string* outStr, string* inStr, int packetNum, int packetType)
 				}
 				else
 				{
 					serialBuffer.erase(0, curSerLength + 6);
 					curSerLength = 0;
+					cout << endl << "Unknown packet type: " << packetType << endl;
 					*returnData = data;
 					return(res);
 				}
@@ -158,6 +209,8 @@ int transmitHandle::getRecivedData(string *returnData)
 
 int transmitHandle::createPacket(string* outStr, string* inStr, int packetNum, int packetType)
 {
+	//cout << endl << "Making packet (" << packetNum << " " << packetType << "): \"" <<  (*inStr) << "\"" << endl;
+
 	outStr->clear();
 	int dataLength = inStr->length();
 	outStr->append(1, (char)(dataLength >> 8));
@@ -191,6 +244,9 @@ int transmitHandle::openPacket(string* outStr, string* inStr, int *packetNumber,
 		*packetType = (*inStr)[3];
 
 	*outStr = inStr->substr(4,inStr->length() - 6); //load the data into output
+
+	//cout << endl << "Opening packet (" << (*packetNumber) << " " << (*packetType) << "): \"" <<  (*outStr) << "\"" << endl;
+
 
 	int checksum = 0;
 	for(int i = 4; i < inStr->length()-2 ; i++) // compute sum8 checksum

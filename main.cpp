@@ -17,7 +17,7 @@
 
 
 #define packetSoftSizeLimit (unsigned int)512
-#define versionString "Communications Handle Ver: 0.12"
+#define versionString "Communications Handle Ver: 0.13"
 
 
 using namespace std;
@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
 		return(0);
 
 	xbeeHandle xbee(&ser);
-	transmitHandle tHandle(&ser, packetSoftSizeLimit, 5);
+	transmitHandle tHandle(&ser, packetSoftSizeLimit, 5, 5);
 
 
 
@@ -253,11 +253,13 @@ int main(int argc, char* argv[])
 			int res = tHandle.getRecivedData(&retVal);
 			if(res != 0)
 			{
-				if(res)
+				if(res >= 0)
 					cout << retVal << flush;
 				else if(res == -3 && quietMode == false)
 					cout << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
-				else if(res != -4 && quietMode == false)
+				else if(res == -4 && quietMode == false)
+					cout << "Missed packet!"<< endl;
+				else if(quietMode == false)
 					cout << "Failed recive! (" << res << ")" << endl;
 			}
 		}
@@ -268,5 +270,3 @@ int main(int argc, char* argv[])
 	}
 	return(0);
 }
-
-

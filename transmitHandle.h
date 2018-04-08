@@ -13,7 +13,7 @@ class transmitHandle
 {
 public:
 
-	transmitHandle(serialIO* serial, int packetSoftSizeLimit = 255 , int packetBufferSize = 0);
+	transmitHandle(serialIO* serial, int packetSoftSizeLimit = 255 , int packetBufferSize = 0, int recivePacketBufferSize = 0);
 	~transmitHandle();
 
 	int transmitData(string transmitString, int packetType = 0);
@@ -31,7 +31,9 @@ private:
 	string* recivedPacketBuffer;
 
 	unsigned int curPacket;
-	unsigned int curRecivedPacket;
+	//unsigned int curRecivedPacket;
+	int lastRecivedPacket;
+
 	unsigned int softSizeLimit;
 	unsigned int curSerLength;
 	unsigned int packBufSize;
@@ -40,7 +42,7 @@ private:
 	unsigned int maxDiscrepency;
 
 	string serialBuffer;
-	
+
 
 };
 
