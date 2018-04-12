@@ -155,7 +155,7 @@ int transmitHandle::getRecivedData(string *returnData)
 
 					string packet;
 					//cout << "Created packet with result: " << createPacket(&packet , &packetBuffer[requestNumber], requestNumber, 0) << endl;
-					cout << "Sent packet with result: " << serialHandle->writeTo(packetBuffer[requestNumber]) << endl;
+					hLog << "Sent packet with result: " << serialHandle->writeTo(packetBuffer[requestNumber]) << endl;
 
 					serialBuffer.erase(0, curSerLength + 6); // make sure to remove data from serial buffer
 					curSerLength = 0;
