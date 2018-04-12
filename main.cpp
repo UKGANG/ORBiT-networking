@@ -285,9 +285,9 @@ int main(int argc, char* argv[])
 				}
 				else if(res == -4)
 				{
-					if(!quietMode)
-						cout << "Missed packet!"<< endl;
-					//hLog << "Missed packet!"<< endl;
+					//if(!quietMode)
+					//	cout << "Missed packet!"<< endl;
+					hLog << "Missed packet!"<< endl;
 				}
 				else if(quietMode == false)
 				{
