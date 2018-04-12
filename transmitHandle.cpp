@@ -157,24 +157,36 @@ int transmitHandle::getRecivedData(string *returnData)
 
 					hLog << "Recived resend request for packet: " << requestNumber << endl;
 
-					for(int i = requestNumber; i != curPacket; i++) // send all packets up to the most current one
+					int i = requestNumber;
+					do // send all packets up to the current one
 					{
-						if(i >= packBufSize) // stay in bounds
-						{
-							i = 0;
-						}
 
 						string testData;
 						int testPN, testPTY;
 						int result = openPacket(&testData, &packetBuffer[i], &testPN, &testPTY);
 
-						hLog << "Packet opened with result: " << result << " Packet Number: " << testPN
-							<< " Packet Type: " << " Data: \"" << testData << "\"" << endl;
+						//hLog << "Packet opened with result: " << result << " Packet Number: " << testPN
+						//	<< " Packet Type: " << " Data: \"" << testData << "\"" << endl;
 
+						result = serialHandle->writeTo(packetBuffer[i]);
+						hLog << "Re-sent packet " << i << " / " << curPacket << " with result: " << result << endl;
+						if(result < 0)
+						{
+							hLog << "Abort!" << endl;
+							break;
+						}
 
-						//cout << "Created packet with result: " << createPacket(&packet , &packetBuffer[requestNumber], requestNumber, 0) << endl;
-						hLog << "Sent packet " << i << " with result: " << serialHandle->writeTo(packetBuffer[i]) << endl;
+						i++;
+						if(i >= packBufSize) // stay in bounds
+						{
+							i = 0;
+						}
+
 					}
+					while(i != curPacket); // TODO Refine this check
+
+					serialHandle->writeTo(packetBuffer[curPacket]); // send last packet
+
 					serialBuffer.erase(0, curSerLength + 6); // make sure to remove data from serial buffer
 					curSerLength = 0;
 					return(0);

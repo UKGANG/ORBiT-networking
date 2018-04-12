@@ -22,6 +22,9 @@
 #define packetSoftSizeLimit (unsigned int)512
 #define versionString "Communications Handle Ver: 0.13"
 
+// Radio buffers
+#define FOREIGN_BUFFER 256
+#define LOCAL_BUFFER 256
 
 using namespace std;
 
@@ -196,7 +199,7 @@ int main(int argc, char* argv[])
 		return(0);
 
 	xbeeHandle xbee(&ser);
-	transmitHandle tHandle(&ser, packetSoftSizeLimit, 5, 5);
+	transmitHandle tHandle(&ser, packetSoftSizeLimit, LOCAL_BUFFER, FOREIGN_BUFFER);
 
 
 
