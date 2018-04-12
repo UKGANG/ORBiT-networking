@@ -124,7 +124,7 @@ int transmitHandle::getRecivedData(string *returnData)
 						return(-4);
 					}
 
-					serialBuffer.erase(0, curSerLength + 6);
+					serialBuffer.erase(0, curSerLength + 6); // make sure to remove data from serial buffer
 					curSerLength = 0;
 					*returnData = data;
 					return(res);
@@ -144,27 +144,26 @@ int transmitHandle::getRecivedData(string *returnData)
 				}
 				else if(packetType == 2) // resend request
 				{
-						if(data.length() < 1)
-							return(0);
+					if(data.length() < 1)
+						return(0);
+					int requestNumber = (int)data[0];
 
-						int requestNumber = (int)data[0];
-						if(requestNumber > packBufSize)
-							return(0);
-
-						hLog << "Resend request for packet: " << requestNumber << endl;
-
-						string packet;
-						createPacket(&packet , &packetBuffer[requestNumber], requestNumber, 0);
-						serialHandle->writeTo(packet);
+					if(requestNumber > packBufSize)
 						return(0);
 
-						//string packet;
-						//createPacket(&packet, "R", , 0);
-						//createPacket(string* outStr, string* inStr, int packetNum, int packetType)
+					hLog << "Recived resend request for packet: " << requestNumber << endl;
+
+					string packet;
+					//cout << "Created packet with result: " << createPacket(&packet , &packetBuffer[requestNumber], requestNumber, 0) << endl;
+					cout << "Sent packet with result: " << serialHandle->writeTo(packetBuffer[requestNumber]) << endl;
+
+					serialBuffer.erase(0, curSerLength + 6); // make sure to remove data from serial buffer
+					curSerLength = 0;
+					return(0);
 				}
 				else
 				{
-					serialBuffer.erase(0, curSerLength + 6);
+					serialBuffer.erase(0, curSerLength + 6); // make sure to remove data from serial buffer
 					curSerLength = 0;
 					hLog << "Unknown packet type: " << packetType << endl;
 					*returnData = data;
