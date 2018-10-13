@@ -1,0 +1,60 @@
+{
+	// Expected Sensors
+	"Sensors": [
+		{
+			"ID": 1,
+			"Desc": "Temperature Sensor1",
+			"Units": "Celcius",
+
+			// specifies how often a reading should be sent onwards
+			// Every n-th reading
+			"RelayRate": 1,
+
+			// what address to relay to
+			"RelayDest": ["123.45.67.89:1234"],
+
+			// which logfile to log to
+			"LogFile": "TempLog"
+		},
+		{
+			"ID": 2,
+			"Desc": "Humidity Sensor1",
+			"Units": "%RH",
+			"RelayRate": 2,
+			"RelayDest": ["123.45.67.89:1234", "localHost:2222"],
+			"LogFile": "HumidityLog"
+		},
+		{
+			"ID": 3,
+			"Desc": "Humidity Sensor2",
+			"Units": "%RH",
+			"RelayRate": 1,
+			"RelayDest": ["localHost:2222"],
+			"LogFile": "HumidityLog"
+		}
+	],
+	// log rules
+	"Log":
+	{
+		// Supported levels
+		// All - log everythinh
+		// DefOnly - log only defined sensors
+		// FileOnly - log only sensors that state a log file
+		"LogLevel": "All",
+		// root folder for log files
+		"LogRoot": "./Logs",
+		// Log subfolder name. Leave empty for no subfolder
+		"LogSubfolder": "LOG:%F_%X",
+		// Logfile to log to if sensor is unknown
+		"UndefLogFile": "UndefLog"
+	},
+	"Defaults":
+	{
+		// default values if not defined in sensor configurations
+		"RelayRate": 1,
+		"RelayDest": ["123.45.67.89:1234", "localHost:2222"],
+		"UnknownDest": ["123.45.67.89:1234"],
+		// destinations for unknown IDs. Leave empty to ignore
+		"LogFile": "DefLog"
+	}
+}

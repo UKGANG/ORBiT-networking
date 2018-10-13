@@ -1,0 +1,31 @@
+{
+	// Expected Sensors
+	"Sensors": [
+		{
+			"ID": "1",
+			"Desc": "Temperature Sensor1",
+			"Units": "Celcius"
+		},
+		{
+			"ID": "2",
+			"Desc": "Humidity Sensor1",
+			"Units": "%RH"
+		}
+	],
+	// Sensors to relay at a specific rate (readings per second)
+	"Relays": [
+		{
+			"ID": "1",
+			"Rate": "1"
+		},
+		{
+			"ID": "2",
+			"Rate": "0.5"
+		}
+	],
+	// log rules
+	"Log":
+	{
+		"LogLevel": "All"
+	}	
+}

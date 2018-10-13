@@ -1,6 +1,6 @@
 # ORBiT Networking Libraries
 
-## Main Purpose
+## Radio
 
 To handle data transmissions over the xBee and make sure that data is correct.
 
@@ -55,6 +55,11 @@ To compile the program, use the command:
 - Command line arguments
 - quiet mode
 - input handle (backspace)
+
+## Relay
+
+To relay and log data comming from signals or programs to other programs.
+
 
 ## Credits
 
