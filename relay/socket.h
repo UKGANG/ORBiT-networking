@@ -5,6 +5,8 @@
 #include <thread>
 #include <atomic>
 #include <iostream>
+#include <netinet/in.h>
+#include <unordered_map>
 
 #define BUFFER_LENGTH 1024
 
@@ -33,9 +35,13 @@ public:
 
 	int getRecBufLevel();
 
+	void printSockaddr(struct sockaddr* input);
+
 private:
 	void initRecv();
 	int reciveData(int socket);
+
+	int getHostByName(std::string destination, struct sockaddr* result);
 
 	int recBufferFill;
 	linkedString* bufferHead;
@@ -43,6 +49,8 @@ private:
 	int bufferLenght;
 	int recPort;
 	int concCon;
+
+	std::unordered_map<std::string, sockaddr_storage*> knownHosts;
 
 	std::atomic<int> ready;
 	std::thread reciveThread;

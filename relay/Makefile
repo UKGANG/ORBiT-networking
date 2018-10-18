@@ -1,24 +1,24 @@
+TARGET = output
+LIBS = -lm
+CC = g++
+CFLAGS = -std=c++11 -pthread
 
+.PHONY: default all clean
 
-#.DEFAULT_GOAL := BUILD
+default: $(TARGET)
+all: default
 
-#compiler
-CC := g++
-#compiler arguments
-CA := -std=c++11 -pthread
-#compiler limit errors argument
-CL := -fmax-errors=5
-#output file
-OF := output
+OBJECTS = $(addprefix build/,$(patsubst %.cpp,%.o,$(wildcard *.cpp)))
+HEADERS = $(wildcard *.h)
 
-BUILD:
-	clear
-	${CC} ${CA} *.cpp -o ${OF}
+build/%.o: %.cpp $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-BUILD_LIMIT:
-	clear
-	${CC} ${CA} ${CL} *.cpp -o ${OF}
+.PRECIOUS: $(TARGET) $(OBJECTS)
 
-BUILD_CLEAN: CLEAN BUILD
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) $(OBJECTS) $(LIBS) -o $@
 
-CLEAN:
+clean:
+	-rm -f *.o
+	-rm -f $(TARGET)

@@ -39,7 +39,7 @@ public:
 
 	// call this function for every packet, before any other operations on a packet
 	int addToMemoryIfIdent(std::string packet);
-	
+
 	int removeIDFromMemory(int id);
 
 	dataIdentifier* getIdentifierPtr(int id);
