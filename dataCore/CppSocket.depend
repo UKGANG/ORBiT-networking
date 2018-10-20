@@ -1,0 +1,42 @@
+# depslib dependency file v1.0
+1538514344 source:/home/mike/Socket/CppSocket/src/SocketReturn.cpp
+	"SocketReturn.h"
+
+1538514344 /home/mike/Socket/CppSocket/include/SocketReturn.h
+
+1539981163 source:/home/mike/CppSocket/src/CppSocket.cpp
+	"CppSocket.h"
+	<time.h>
+
+1539628629 /home/mike/CppSocket/include/CppSocket.h
+	<stdio.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<netinet/in.h>
+	<arpa/inet.h>
+	<string.h>
+	<unistd.h>
+	<CppSocketTerm.h>
+	<mutex>
+	<stdio.h>
+	<string.h>
+	<stdlib.h>
+	<sys/types.h>
+	<errno.h>
+	<unistd.h>
+	<fcntl.h>
+	<sys/select.h>
+	<sys/socket.h>
+	<netinet/in.h>
+	<arpa/inet.h>
+
+1538572889 source:/home/mike/CppSocket/src/SocketReturn.cpp
+	"SocketReturn.h"
+
+1538572889 /home/mike/CppSocket/include/SocketReturn.h
+
+1539629188 /home/mike/CppSocket/include/CppSocketTerm.h
+
+1539981210 source:/home/mike/CppSocket/src/main.cpp
+	"CppSocket.h"
+
