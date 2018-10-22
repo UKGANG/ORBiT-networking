@@ -202,10 +202,17 @@ CppSocket* CppSocket::acceptClient(ErrorHandler errorHandler,VerfyHandler verfyH
 
 Error CppSocket::stopSocket(){
     isClosedValue=true;
+    shutdown(socketfd, SHUT_RDWR);
 }
 Error CppSocket::reconnect(){
     // this function can only use for TCP Client
+    shutdown(socketfd, SHUT_RDWR);
+    int flags = fcntl(socketfd, F_GETFL, 0);
+    flags &= ~O_NONBLOCK;
+    fcntl(fd, F_SETFL, flags)；
+    return connectTo(remoteAddress);
 }
+
 Error CppSocket::setTimeOut(int time){
     // time in millier second
     timeout=time;
@@ -392,6 +399,7 @@ char* CppSocket::getRemain(int finishLength,int total,char* sdata){
     return ddata;
 }
 CppSocket::~CppSocket(){
-
+    stopSocket();
+    close(socketfd);
 }
 
