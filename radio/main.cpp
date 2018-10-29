@@ -4,10 +4,13 @@
 #include <thread>
 #include <mutex>
 #include <stdio.h>
+#include <fstream>
+#include <sstream>
 
 #include "serialio.h"
 #include "xbeeHandle.h"
 #include "transmitHandle.h"
+#include "logHandle.h"
 
 //#define dev (char*)"/dev/pts/17"
 //#define dev (char*)"/dev/pts/18"
@@ -19,10 +22,16 @@
 #define packetSoftSizeLimit (unsigned int)512
 #define versionString "Communications Handle Ver: 0.13"
 
+// Radio buffers
+#define FOREIGN_BUFFER 256
+#define LOCAL_BUFFER 256
 
 using namespace std;
 
 atomic<bool> run(true);
+
+// global log class (yes, I know, bad programming right there)
+logHandle hLog;
 
 void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer, bool filterMode = false) //input handle
 {
@@ -66,7 +75,7 @@ void inputHandle(serialIO* ser, mutex* mBuffer, string* buffer, bool filterMode 
 int main(int argc, char* argv[])
 {
 	bool quietMode = false;
-	bool consoleMode = true;
+	bool consoleMode = false;
 	bool filterMode = true;
 	bool setDestination = false;
 	bool getDestination = false;
@@ -74,11 +83,16 @@ int main(int argc, char* argv[])
 	bool setSource = false;
 	bool getSource = false;
 	bool tryReset = false;
+	bool setSerialRate = false;
+	bool setInitialRate = false;
 
 	int sourceAddr = 0;
 	int destinationAddr = 0;
+	int serialRate = B9600;
+	int intitialRate = B9600;
 
 	string devPath = dev;
+	string logPath = "./radio.log";
 
 	for(int i = 1; i < argc; i++)
 	{
@@ -87,8 +101,8 @@ int main(int argc, char* argv[])
 			quietMode = true;
 		}
 		else if(strcmp(argv[i], "-c") == 0)
-		{ // turn off console mode
-			consoleMode = false;
+		{ // turn on console mode
+			consoleMode = true;
 		}
 		else if(strcmp(argv[i], "-f") == 0)
 		{ // turn off filter mode
@@ -102,6 +116,16 @@ int main(int argc, char* argv[])
 				return(1);
 			}
 			devPath = argv[i+1];
+			i++; //increment i due to argument
+		}
+		else if(strcmp(argv[i], "-l") == 0)
+		{ // set logfile
+			if(!(i+1 < argc))
+			{
+				cout << "Error: -l missing argument!" << endl;
+				return(1);
+			}
+			logPath = argv[i+1];
 			i++; //increment i due to argument
 		}
 		else if(strcmp(argv[i], "--set-destination") == 0)
@@ -160,6 +184,46 @@ int main(int argc, char* argv[])
 		{ // try resetting board with text commands
 			tryReset = true;
 		}
+		else if(strcmp(argv[i], "--set-serial-baud") == 0)
+		{ // set serial baud rate
+			if(!(i+1 < argc))
+			{
+				cout << "Error: set-serial-baud missing argument!" << endl;
+				return(1);
+			}
+			try
+			{
+			    serialRate = stoi(argv[i+1]);
+			}
+			catch (std::exception const &e)
+			{
+				cout << "Error: set-serial-baud only accepts a number!" << endl;
+				return(1);
+			}
+
+			i++; //increment i due to argument
+			setSerialRate = true;
+		}
+		else if(strcmp(argv[i], "--serial-baud") == 0)
+		{ // set serial baud rate
+			if(!(i+1 < argc))
+			{
+				cout << "Error: serial-baud missing argument!" << endl;
+				return(1);
+			}
+			try
+			{
+			    intitialRate = stoi(argv[i+1]);
+			}
+			catch (std::exception const &e)
+			{
+				cout << "Error: initial-baud only accepts a number!" << endl;
+				return(1);
+			}
+
+			i++; //increment i due to argument
+			setInitialRate = true;
+		}
 		else
 		{
 			cout << "Unknown argument: " << argv[i] << endl;
@@ -167,18 +231,34 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	hLog.setLogFile(logPath);
+
 	if(quietMode == false)
 		cout << versionString << endl;
-
+	hLog << versionString << endl;
 
 	serialIO ser;
 
-	if(ser.initialize(devPath, B9600, 0, false, 0) != 0)
-		return(0);
+	if(setInitialRate == true)
+	{
+		int rateParameter = serialIO::intToBaud(intitialRate);
+		if(rateParameter == -1)
+		{
+			cout << "Not a valid baud rate!" << endl;
+			return(-1);
+		}
+
+		if(ser.initialize(devPath, rateParameter, 0, false, 0) != 0)
+			return(-1);
+	}
+	else
+	{
+		if(ser.initialize(devPath, B9600, 0, false, 0) != 0)
+			return(-1);
+	}
 
 	xbeeHandle xbee(&ser);
-	transmitHandle tHandle(&ser, packetSoftSizeLimit, 5, 5);
-
+	transmitHandle tHandle(&ser, packetSoftSizeLimit, LOCAL_BUFFER, FOREIGN_BUFFER);
 
 
 	if(tryReset) // TODO make this work
@@ -190,30 +270,45 @@ int main(int argc, char* argv[])
 
 	if(setDestination)
 		xbee.setDestinationAddress(destinationAddr);
+
 	if(getDestination)
 		cout << "Destination Address: " << xbee.getDestinationAddress() << endl;
 
 	if(setSource)
 		xbee.setSourceAddress(sourceAddr);
+
 	if(getSource)
 		cout << "Source Address: " << xbee.getSourceAddress() << endl;
 
 	if(getVoltage == true)
-		cout << "Board Voltage: " << xbee.getBoardVoltage() << endl;
+		cout << "Board Voltage: " << xbee.getBoardVoltage() << "V" << endl;
 
+	if(setSerialRate)
+	{
+		int rateParameter = serialIO::intToBaud(serialRate);
+		if(rateParameter == -1)
+		{
+			cout << "Not a valid baud rate!" << endl;
+			return(-1); // baud rate not standard
+		}
 
-	/*cout << "Received Signal Strength: "<< xbee.getReceivedSignalStrength() << endl;
+		cout << "changing serial baud rate..." << endl;
+		if(xbee.setInterfaceDataRate(rateParameter) != 0)
+		{
+			cout << "Error setting serial baud rate!" << endl;
+			return(-1);
+		}
+	}
 
-	cout << "baud rate: " << xbee.getInterfaceDataRate() << endl;
-	cout << "changing serial baud rate..." << endl;
-	xbee.setInterfaceDataRate(B19200);
-	cout << "baud rate: " << xbee.getInterfaceDataRate() << endl;*/
-
+	//cout << "Received Signal Strength: "<< xbee.getReceivedSignalStrength() << endl;
 
 	if(consoleMode == true)
 	{
 		if(quietMode == false)
-			cout << "Entered console mode: " << endl;
+		{
+			cout << "Entered console mode:\n"
+			     << "CAUTION: EXPERIMENTAL!" << endl;
+		}
 
 		mutex mBuffer;
 		string userInput;
@@ -254,13 +349,28 @@ int main(int argc, char* argv[])
 			if(res != 0)
 			{
 				if(res >= 0)
+				{
+					//writeTeeLog(retVal, quietMode);
 					cout << retVal << flush;
-				else if(res == -3 && quietMode == false)
-					cout << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
-				else if(res == -4 && quietMode == false)
-					cout << "Missed packet!"<< endl;
+				}
+				else if(res == -3)
+				{
+					if(!quietMode)
+						cout << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
+					hLog << "Erronious recive (" << res << "): \"" << retVal << "\""<< endl;
+				}
+				else if(res == -4)
+				{
+					//if(!quietMode)
+					//	cout << "Missed packet!"<< endl;
+					hLog << "Missed packet!"<< endl;
+				}
 				else if(quietMode == false)
-					cout << "Failed recive! (" << res << ")" << endl;
+				{
+					if(!quietMode)
+						cout << "Failed recive! (" << res << ")" << endl;
+					hLog << "Failed recive! (" << res << ")" << endl;
+				}
 			}
 		}
 

@@ -1,3 +1,12 @@
+#include <cstdlib>
+#include <stdlib.h>
+#include <cstdio>
+#include <unistd.h>
+//#include <sys/time.h>
+
+#include <termios.h> // for B-constant definitions
+
+#include <iostream>
 
 #include "xbeeHandle.h"
 
@@ -9,22 +18,22 @@ xbeeHandle::xbeeHandle(serialIO* serial)
 
 string xbeeHandle::binaryCommand(string cmdStr, int reciveLength)
 {
-	serialHandle->clearRTS();
+	serialHandle->setRTS();
 	serialHandle->writeTo(cmdStr);
 	string returnString = "";
+	serialHandle->clearRTS();
 	if(reciveLength > 0)
 		returnString = serialHandle->readFrom(reciveLength);
-	serialHandle->setRTS();
+
 	return(returnString);
 }
 
 int xbeeHandle::tryReset()
 {
-	//ATRT1
 	usleep(2000);
 	serialHandle->writeTo("+++");
 	usleep(1500);
-	serialHandle->writeTo("ATRT 1\n");
+	serialHandle->writeTo("ATRT 1\n"); // set to accept binary commands
 
 	string returnString = "";
 	returnString = serialHandle->readFrom(1);
@@ -64,9 +73,6 @@ int xbeeHandle::getReceivedSignalStrength()
 		return((int)s.at(0));
 	}
 	return(-1);
-
-	//cout << s << " " << s.length() << endl;
-
 }
 
 int xbeeHandle::setDestinationAddress(unsigned int address)
@@ -74,7 +80,7 @@ int xbeeHandle::setDestinationAddress(unsigned int address)
 	if(address > 0xffff)
 		return (-1);
 
-	string s(1,'\0');
+	string s(1,0x00);
 	s.append(1,address & 0xff);
 	s.append(1, address >> 8);
 	binaryCommand(s, 0);
@@ -140,6 +146,7 @@ int xbeeHandle::setInterfaceDataRate(int rate)
 		rateParameter = 6;
 		break;
 	default:
+		cout << "Invalid Baud rate for xbee" << endl;
 		return(-1); // baud rate dosn't exist for the xbee
 	}
 
@@ -149,7 +156,7 @@ int xbeeHandle::setInterfaceDataRate(int rate)
 	s.append(1, 0x09); // commit change
 	s.append(2, 0x00);
 
-	binaryCommand(s, 0); // sedn command & commit
+	binaryCommand(s, 0); // send command & commit
 
 	serialIO::serialConfig serConf; //get current settings
 	serialHandle->getConfig(&serConf);
@@ -161,6 +168,7 @@ int xbeeHandle::setInterfaceDataRate(int rate)
 	sleep(1);
 	return(0);
 }
+
 int xbeeHandle::getInterfaceDataRate()
 {
 	string s = binaryCommand("\x95",4);
@@ -168,5 +176,3 @@ int xbeeHandle::getInterfaceDataRate()
 		return(s[3]*0xffffff + s[2]*0xffff + s[1]*0xff + s[0]);
 	return(-1);
 }
-
-

@@ -1,5 +1,7 @@
+#include <iostream>
 
 #include "transmitHandle.h"
+#include "logHandle.h"
 
 transmitHandle::transmitHandle(serialIO* serial, int packetSoftSizeLimit, int packetBufferSize, int recivePacketBufferSize)
 {
@@ -14,7 +16,6 @@ transmitHandle::transmitHandle(serialIO* serial, int packetSoftSizeLimit, int pa
 	recivedPacketBuffer = new string[packetBufferSize]; // TODO see previous
 
 	curPacket = 0;
-	//curRecivedPacket = 0;
 	lastRecivedPacket = -1;
 }
 
@@ -35,11 +36,15 @@ int transmitHandle::transmitData(string transmitString, int packetType)
 	string packet;
 	int res = createPacket(&packet , &transmitString, curPacket, packetType); // create packet
 	if(res < 0)
+	{
+		hLog << "Error in transmit data: " << res << endl;
 		return(res);
+	}
+
 
 	if(packBufSize > 0 && packetBuffer != nullptr)
 	{
-		packetBuffer[curPacket] = transmitString; // buffer sent packet
+		packetBuffer[curPacket] = packet; // buffer sent packet
 		curPacket++;
 		if(curPacket >= packBufSize)
 			curPacket = 0;
@@ -105,22 +110,25 @@ int transmitHandle::getRecivedData(string *returnData)
 
 					if(packetNumber != lastRecivedPacket) // check if a packet was missed
 					{
-						cout << "Packet number (" << lastRecivedPacket << ") was missed!" << endl;
-						lastRecivedPacket--; // reset packet counter
+						hLog << "Packet-number (" << lastRecivedPacket
+							<< ") was missed! Recived Packet: "
+							<< packetNumber << " instead!" << endl;
 
 						//re-request packet
 						string packet;
 						string packetData = "";
-						packetData.append(1,(char)(lastRecivedPacket + 1));
+						packetData.append(1,(char)(lastRecivedPacket));
 						createPacket(&packet, &packetData,0 ,2); // 0 packet number for command
+						serialHandle->writeTo(packet);
 
 						serialBuffer.erase(0, curSerLength + 6);
 						curSerLength = 0;
+						lastRecivedPacket--; // reset packet counter
 
 						return(-4);
 					}
 
-					serialBuffer.erase(0, curSerLength + 6);
+					serialBuffer.erase(0, curSerLength + 6); // make sure to remove data from serial buffer
 					curSerLength = 0;
 					*returnData = data;
 					return(res);
@@ -140,27 +148,54 @@ int transmitHandle::getRecivedData(string *returnData)
 				}
 				else if(packetType == 2) // resend request
 				{
-						if(data.length() < 1) //TODO set proper return value
-							return(res);
+					if(data.length() < 1)
+						return(0);
+					int requestNumber = (int)data[0];
 
-						int requestNumber = (int)data[0];
-						if(requestNumber > packBufSize) //TODO set proper return value
-							return(res);
-
-						string packet;
-						createPacket(&packet , &packetBuffer[requestNumber], requestNumber, 0);
-						serialHandle->writeTo(packet);
+					if(requestNumber > packBufSize)
 						return(0);
 
-						//string packet;
-						//createPacket(&packet, "R", , 0);
-						//createPacket(string* outStr, string* inStr, int packetNum, int packetType)
+					hLog << "Recived resend request for packet: " << requestNumber << endl;
+
+					int i = requestNumber;
+					do // send all packets up to the current one
+					{
+
+						string testData;
+						int testPN, testPTY;
+						int result = openPacket(&testData, &packetBuffer[i], &testPN, &testPTY);
+
+						//hLog << "Packet opened with result: " << result << " Packet Number: " << testPN
+						//	<< " Packet Type: " << " Data: \"" << testData << "\"" << endl;
+
+						result = serialHandle->writeTo(packetBuffer[i]);
+						hLog << "Re-sent packet " << i << " / " << curPacket << " with result: " << result << endl;
+						if(result < 0)
+						{
+							hLog << "Abort!" << endl;
+							break;
+						}
+
+						i++;
+						if(i >= packBufSize) // stay in bounds
+						{
+							i = 0;
+						}
+
+					}
+					while(i != curPacket); // TODO Refine this check
+
+					serialHandle->writeTo(packetBuffer[curPacket]); // send last packet
+
+					serialBuffer.erase(0, curSerLength + 6); // make sure to remove data from serial buffer
+					curSerLength = 0;
+					return(0);
 				}
 				else
 				{
-					serialBuffer.erase(0, curSerLength + 6);
+					serialBuffer.erase(0, curSerLength + 6); // make sure to remove data from serial buffer
 					curSerLength = 0;
-					cout << endl << "Unknown packet type: " << packetType << endl;
+					hLog << "Unknown packet type: " << packetType << endl;
 					*returnData = data;
 					return(res);
 				}
@@ -227,6 +262,14 @@ int transmitHandle::createPacket(string* outStr, string* inStr, int packetNum, i
 	return(0);
 }
 
+/**
+	Opens a packet
+	@param outStr a pointer to a string, where the the result should be stored
+	@param inStr a pointer to the string of the packet that should be opened
+	@param packetNumber a pointer to an int where the packet number should be stored
+	@param packetType a pointer to an int where the packet type should be stored
+	@return returns lenght of message on success, or 0 > on fail
+*/
 int transmitHandle::openPacket(string* outStr, string* inStr, int *packetNumber, int *packetType)
 {
 	int length = static_cast<unsigned char>((*inStr)[0]) * 0x100 + static_cast<unsigned char>((*inStr)[1]);

@@ -2,35 +2,43 @@
 	// Expected Sensors
 	"Sensors": [
 		{
-			"ID": 1,
-			"Desc": "Temperature Sensor1",
-			"Units": "Celcius",
+			"ID": 7,
+			"Desc": "Accelerometer1",
+			"Units": "X-m/s, Y-m/s, Z-m/s",
 
 			// specifies how often a reading should be sent onwards
 			// Every n-th reading
 			"RelayRate": 1,
 
 			// what address to relay to
-			"RelayDest": ["123.45.67.89:1234"],
+			"RelayDest": ["192.168.1.201:2222"],
 
 			// which logfile to log to
-			"LogFile": "TempLog"
+			"LogFile": "Accel_Log"
 		},
 		{
-			"ID": 2,
-			"Desc": "Humidity Sensor1",
-			"Units": "%RH",
-			"RelayRate": 2,
-			"RelayDest": ["123.45.67.89:1234", "localHost:2222"],
-			"LogFile": "HumidityLog"
-		},
-		{
-			"ID": 3,
-			"Desc": "Humidity Sensor2",
-			"Units": "%RH",
+			"ID": 6,
+			"Desc": "Gyroscope1",
+			"Units": "X-deg/s, Y-deg/s, Z-deg/s",
 			"RelayRate": 1,
-			"RelayDest": ["localHost:2222"],
-			"LogFile": "HumidityLog"
+			"RelayDest": ["192.168.1.201:2222"],
+			"LogFile": "Gyro"
+		},
+		{
+			"ID": 8,
+			"Desc": "Atmospheric1",
+			"Units": "Units",
+			"RelayRate": 1,
+			"RelayDest": ["192.168.1.201:2222"],
+			"LogFile": "Atmospheric"
+		},
+		{
+			"ID": 9,
+			"Desc": "Magnetometer",
+			"Units": "Units",
+			"RelayRate": 1,
+			"RelayDest": ["192.168.1.201:2222"],
+			"LogFile": "Magnetometer"
 		}
 	],
 	// log rules
@@ -51,7 +59,7 @@
 	"Defaults":
 	{
 		// default values if not defined in sensor configurations
-		"RelayRate": 1,
+		"RelayRate": 5,
 		"RelayDest": ["123.45.67.89:1234", "localHost:2222"],
 		"UnknownDest": ["123.45.67.89:1234"],
 		// destinations for unknown IDs. Leave empty to ignore

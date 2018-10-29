@@ -200,3 +200,26 @@ void serialIO::getConfig(serialConfig *config)
 	config->blocking = settings.blocking;
 	config->timeoutMs = settings.timeoutMs;
 }
+
+int serialIO::intToBaud(int speed)
+{
+	switch(speed)
+	{
+	case(1200):
+		return(B1200);
+	case(2400):
+		return(B2400);
+	case(4800):
+		return(B4800);
+	case(9600):
+		return(B9600);
+	case(19200):
+		return(B19200);
+	case(38400):
+		return(B38400);
+	case(57600):
+		return(B57600);
+	default:
+		return(-1); // baud rate dosn't exist for the xbee
+	}
+}

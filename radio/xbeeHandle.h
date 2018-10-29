@@ -2,15 +2,6 @@
 #define XHANDLE
 
 #include <string.h>
-#include <cstdlib>
-#include <stdlib.h>
-#include <cstdio>
-#include <unistd.h>
-//#include <sys/time.h>
-
-#include <termios.h> // for B-constant definitions
-
-#include <iostream>
 
 #include "serialio.h"
 

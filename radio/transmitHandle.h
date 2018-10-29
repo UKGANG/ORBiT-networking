@@ -1,7 +1,6 @@
 #ifndef TRANSMIT_HANDLE
 #define TRANSMIT_HANDLE
 
-#include <iostream>
 #include <string.h>
 
 
@@ -42,8 +41,6 @@ private:
 	unsigned int maxDiscrepency;
 
 	string serialBuffer;
-
-
 };
 
 #endif

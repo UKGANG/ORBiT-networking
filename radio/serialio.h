@@ -39,6 +39,8 @@ public:
 
 	void getConfig(serialConfig *config);
 
+	static int intToBaud(int speed);
+
 private:
 
 	int setBlocking(bool state, int timeoutMs);

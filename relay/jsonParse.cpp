@@ -14,7 +14,7 @@ json jsonParse::parseFile(string fileName)
 	{
 		return(-1);
 	}
-	
+
 	json parser;
 
 	string fileString;
