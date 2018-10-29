@@ -176,3 +176,29 @@ int xbeeHandle::getInterfaceDataRate()
 		return(s[3]*0xffffff + s[2]*0xffff + s[1]*0xff + s[0]);
 	return(-1);
 }
+
+int xbeeHandle::setRFDataRate(unsigned int rate)
+{
+	if(rate > 0x1)
+		return (-1);
+
+	string s(1,0x39);
+	s.append(1, rate & 0xff);
+	s.append(1, rate >> 8);
+	binaryCommand(s, 0);
+
+	return(0);
+}
+
+int xbeeHandle::getRFDataRate()
+{
+	string cmd = "";
+	cmd.append(1, 0x80 | 0x39);
+
+	string s = binaryCommand( cmd, 1);
+
+	if(s.length() == 2)
+		return((int)s.at(1) * 0xff + (int)s.at(0));
+	return(-1);
+}
+

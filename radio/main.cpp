@@ -77,19 +77,31 @@ int main(int argc, char* argv[])
 	bool quietMode = false;
 	bool consoleMode = false;
 	bool filterMode = true;
+	bool getVoltage = false;
+
 	bool setDestination = false;
 	bool getDestination = false;
-	bool getVoltage = false;
+
+
 	bool setSource = false;
 	bool getSource = false;
+
 	bool tryReset = false;
+
 	bool setSerialRate = false;
 	bool setInitialRate = false;
 
+	bool setRFRate = false;
+	bool getRFRate = false;
+
+
 	int sourceAddr = 0;
 	int destinationAddr = 0;
+
 	int serialRate = B9600;
 	int intitialRate = B9600;
+
+	int RFRate = 0;
 
 	string devPath = dev;
 	string logPath = "./radio.log";
@@ -224,6 +236,30 @@ int main(int argc, char* argv[])
 			i++; //increment i due to argument
 			setInitialRate = true;
 		}
+		else if(strcmp(argv[i], "--set-rf-rate") == 0)
+		{ // set set rf rate
+			if(!(i+1 < argc))
+			{
+				cout << "Error: set-rf-rate missing argument!" << endl;
+				return(1);
+			}
+			try
+			{
+				RFRate = stoi(argv[i+1]);
+			}
+			catch (std::exception const &e)
+			{
+				cout << "Error: set-rf-rate only accepts a number!" << endl;
+				return(1);
+			}
+
+			i++; //increment i due to argument
+			setRFRate = true;
+		}
+		else if(strcmp(argv[i], "--get-rf-rate") == 0)
+		{ // try resetting board with text commands
+			getRFRate = true;
+		}
 		else
 		{
 			cout << "Unknown argument: " << argv[i] << endl;
@@ -282,6 +318,13 @@ int main(int argc, char* argv[])
 
 	if(getVoltage == true)
 		cout << "Board Voltage: " << xbee.getBoardVoltage() << "V" << endl;
+
+	if(setRFRate)
+		xbee.setRFDataRate(RFRate);
+
+	if(getRFRate)
+		cout << "RF rate: " << xbee.getRFDataRate() << endl;
+
 
 	if(setSerialRate)
 	{

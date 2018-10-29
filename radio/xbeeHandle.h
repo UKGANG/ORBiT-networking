@@ -28,6 +28,10 @@ public:
 	int setInterfaceDataRate(int rate);
 	int getInterfaceDataRate();
 
+	// rf interface commands
+	int setRFDataRate(unsigned int rate);
+	int getRFDataRate();
+
 private:
 
 	serialIO* serialHandle;
