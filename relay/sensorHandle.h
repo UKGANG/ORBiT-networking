@@ -36,7 +36,7 @@ public:
 	int initFromString(std::string jsonString, bool printSettings);
 
 	int processPacket(std::string packet, udpSocketHandle* sendConn);
-	
+
 
 private:
 	SensorConfig* sensorsArr;
@@ -69,6 +69,8 @@ private:
 	void printDefaultSettings();
 
 	void deleteSensorsArray();
+
+	bool isInitialized;
 
 
 };

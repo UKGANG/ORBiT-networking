@@ -17,10 +17,14 @@ sensorHandle::sensorHandle()
 	numSensors = 0;
 	defaultRelayDestLength = 0;
 	UnknownDestLength = 0;
+	isInitialized = false;
 }
 
 sensorHandle::~sensorHandle()
 {
+	if(isInitialized == false)
+		return;
+
 	// make sure to clear all dynamic memory
 	deleteSensorsArray();
 
@@ -29,7 +33,7 @@ sensorHandle::~sensorHandle()
 
 	if (UnknownDestArr != nullptr)
 		delete[] UnknownDestArr;
-	
+
 
 	 for ( unordered_map<string, ofstream*>::iterator it = fileMap.begin();
 		it != fileMap.end();
@@ -42,6 +46,8 @@ sensorHandle::~sensorHandle()
 	numSensors = 0;
 	defaultRelayDestLength = 0;
 	UnknownDestLength = 0;
+	isInitialized = false;
+
 }
 
 int sensorHandle::initFromConfig(std::string configFile, bool printSettings)
@@ -49,7 +55,11 @@ int sensorHandle::initFromConfig(std::string configFile, bool printSettings)
 	try
 	{
 		json configJson = jsonParse::parseFile(configFile);
-		return(initFromJson(configJson, printSettings));
+		int res = initFromJson(configJson, printSettings);
+
+		if(res == 0)
+			isInitialized = true;
+		return(res);
 	}
 	catch (...)
 	{
@@ -63,7 +73,11 @@ int sensorHandle::initFromString(std::string jsonString, bool printSettings)
 {
 	try
 	{
-		return(initFromJson(json::parse(jsonString), printSettings));
+		int res = initFromJson(json::parse(jsonString), printSettings);
+
+		if(res == 0)
+			isInitialized = true;
+		return(res);
 	}
 	catch (...)
 	{
@@ -99,7 +113,7 @@ int sensorHandle::processPacket(string packet, udpSocketHandle* sendConn)
 				cout << "Error: Recived data without identification! (ID: "
 				     << tempData.id << ")" << endl;
 
-				string dataString = to_string(tempData.id) + '\t' + tempData.data + 
+				string dataString = to_string(tempData.id) + '\t' + tempData.data +
 				                    " NO IDENT\tAt T: " + tempData.time + 's';
 
 				writeToLog(tempData.id, dataString);
@@ -116,8 +130,8 @@ int sensorHandle::processPacket(string packet, udpSocketHandle* sendConn)
 		dataIdentifier tempIdent;
 		dataProt.unPackageIdent(packet, &tempIdent);
 
-		cout << "Recived Ident: " << tempIdent.id 
-		     << " Desc: " << tempIdent.description 
+		cout << "Recived Ident: " << tempIdent.id
+		     << " Desc: " << tempIdent.description
 		     << " Units: " << tempIdent.units << endl;
 
 		relayPacket(tempIdent.id, packet, sendConn, true);
@@ -188,7 +202,8 @@ int sensorHandle::initFromJson(json configJson, bool printSettings)
 
 	logSubFolder.clear();
 	logSubFolder = logSubFolderBuff;
-
+	// remove all special characters for compatibility (mainly windows)
+	replace(logSubFolder.begin(), logSubFolder.end(), ':', '_');
 
 	// Default Values
 
@@ -232,7 +247,6 @@ int sensorHandle::initFromJson(json configJson, bool printSettings)
 			{
 				defaultRelayDestArr = nullptr;
 			}
-			
 		}
 		if(configJson["Defaults"]["LogFile"].is_string())
 		{
@@ -298,7 +312,6 @@ int sensorHandle::initFromJson(json configJson, bool printSettings)
 		sensorsArr = new SensorConfig[numSensors];
 	}
 
-	
 	for (json::iterator it = configJson["Sensors"].begin(); it != configJson["Sensors"].end(); ++it)
 	{
 		// critical data (error if not defined)
@@ -308,7 +321,7 @@ int sensorHandle::initFromJson(json configJson, bool printSettings)
 			return(-1);
 		}
 		sensorsArr[i].id = (*it)["ID"];
-	
+
 		if(!(*it)["Desc"].is_string())
 		{
 			deleteSensorsArray();
@@ -369,7 +382,7 @@ int sensorHandle::initFromJson(json configJson, bool printSettings)
 			sensorsArr[i].logFile = (*it)["LogFile"];
 		else
 			sensorsArr[i].logFile = defaultLogFile;
-		
+
 		sensorsArr[i].lastRelay = 0; // initialize last relay value
 		i++;
 	}
@@ -397,6 +410,18 @@ int sensorHandle::createLogs()
 	string fileString = "";
 
 	// create log directory
+	if(logRoot != "")
+	{
+		fileString = logRoot;
+		const int dir_err = mkdir(fileString.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		if(dir_err == -1 && errno != EEXIST)
+		{
+			cout << "Error creating directory: " << fileString << endl;
+			return(-1);
+		}
+	}
+
+	// create log subdirectory
 	if(logSubFolder == "")
 	{
 		if(logRoot == "")
@@ -410,6 +435,7 @@ int sensorHandle::createLogs()
 		const int dir_err = mkdir(fileString.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if (-1 == dir_err)
 		{
+			cerr << "Error creating directory: " << fileString << endl;
 			return(-1);
 		}
 	}
@@ -425,7 +451,7 @@ int sensorHandle::createLogs()
 			delete defaultLogPtr; // error opening file
 			return(-1);
 		}
-		
+
 		pair<string, ofstream*> tempPair (sensorsArr[i].logFile ,defaultLogPtr);
 		fileMap.insert(tempPair); // commit to map
 
@@ -451,7 +477,7 @@ int sensorHandle::createLogs()
 		// doesn't exist, create new file
 		ofstream* filePtr = new ofstream;
 		filePtr->open(fileString + sensorsArr[i].logFile + ".txt");
-		
+
 		if(!filePtr->is_open())
 		{
 			// error opening file
@@ -466,7 +492,7 @@ int sensorHandle::createLogs()
 			}
 			return(-1);
 		}
-		// file open, wtite header and add to map		
+		// file open, wtite header and add to map
 
 		(*filePtr) << "ID\tData + units\tTime" << endl;
 

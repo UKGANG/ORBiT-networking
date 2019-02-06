@@ -46,7 +46,6 @@ udpSocketHandle::~udpSocketHandle()
 
 void udpSocketHandle::stopRecive()
 {
-	cout << "Stopping thread..." << endl;
 	ready = 0;
 	if (reciveThread.joinable())
 	{
@@ -94,7 +93,26 @@ int udpSocketHandle::reciveData(int socket)
 	//linkedString* tempLStringPtr = new linkedString(tempLength, new char[tempLength]);
 	linkedString* tempLStringPtr = new linkedString();
 
-	tempLStringPtr->dataLength = recv(socket, &(tempLStringPtr->data), BUFFER_LENGTH, 0); // read message into buffer
+	int res = 0;
+	do
+	{
+		res = recv(socket, &(tempLStringPtr->data), BUFFER_LENGTH, MSG_DONTWAIT); // read message into buffer
+		if(res == -1) // check if an error occured
+		{
+			if (errno != EAGAIN || errno != EWOULDBLOCK) //error was unexpected
+			{
+				delete tempLStringPtr;
+				return (res);
+			}
+			else if(ready != 1) // error expected, but thread set to terminate
+			{
+				delete tempLStringPtr;
+				return(0);
+			}
+		}
+	} while(res == -1);
+
+	tempLStringPtr->dataLength = res;
 
 	if(bufferHead == nullptr)
 	{

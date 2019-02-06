@@ -197,8 +197,8 @@ int xbeeHandle::getRFDataRate()
 
 	string s = binaryCommand( cmd, 1);
 
-	if(s.length() == 2)
-		return((int)s.at(1) * 0xff + (int)s.at(0));
+	if(s.length() == 1)
+		return((int)s.at(0));
 	return(-1);
 }
 

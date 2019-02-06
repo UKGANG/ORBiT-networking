@@ -11,7 +11,7 @@
 			"RelayRate": 1,
 
 			// what address to relay to
-			"RelayDest": ["192.168.1.201:2222"],
+			"RelayDest": ["base.orbit:2222"],
 
 			// which logfile to log to
 			"LogFile": "Accel_Log"
@@ -21,7 +21,7 @@
 			"Desc": "Gyroscope1",
 			"Units": "X-deg/s, Y-deg/s, Z-deg/s",
 			"RelayRate": 1,
-			"RelayDest": ["192.168.1.201:2222"],
+			"RelayDest": ["base.orbit:2222"],
 			"LogFile": "Gyro"
 		},
 		{
@@ -29,7 +29,7 @@
 			"Desc": "Atmospheric1",
 			"Units": "Units",
 			"RelayRate": 1,
-			"RelayDest": ["192.168.1.201:2222"],
+			"RelayDest": ["base.orbit:2222"],
 			"LogFile": "Atmospheric"
 		},
 		{
@@ -37,7 +37,7 @@
 			"Desc": "Magnetometer",
 			"Units": "Units",
 			"RelayRate": 1,
-			"RelayDest": ["192.168.1.201:2222"],
+			"RelayDest": ["base.orbit:2222"],
 			"LogFile": "Magnetometer"
 		}
 	],
@@ -60,7 +60,7 @@
 	{
 		// default values if not defined in sensor configurations
 		"RelayRate": 5,
-		"RelayDest": ["123.45.67.89:1234", "localHost:2222"],
+		"RelayDest": ["123.45.67.89:1234"],
 		"UnknownDest": ["123.45.67.89:1234"],
 		// destinations for unknown IDs. Leave empty to ignore
 		"LogFile": "DefLog"

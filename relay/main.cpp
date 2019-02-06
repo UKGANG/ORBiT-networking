@@ -22,12 +22,13 @@ int main()
 	sensorHandle hSensor;
 	if(hSensor.initFromConfig("Config.json", true) != 0)
 	{
+		conn.stopRecive();
 		return(0);
 	}
 
 	string output;
 
-	/*	
+	/*
 		dataProtocol dataProt;
 		string testident1;
 		string testident2;
